@@ -30,7 +30,7 @@
 │   └─ require non-root + read-only rootfs + limits                    │
 │                               │                                     │
 │                               ▼                                     │
-│  irongate namespace: Deployment (2 replicas) ──► Service :30080     │
+│  devops-pipeline namespace: Deployment (2 replicas) ──► Service :30080     │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -41,6 +41,9 @@
 |-----------|----------------|
 | Fastify service | Serve `/`, `/health`, `/metrics`; expose a minimal, hardened deploy target |
 | Supply Chain workflow | Produce a tested, scanned, signed, and attested image |
+| CodeQL workflow | Run semantic `security-and-quality` analysis for JavaScript/TypeScript |
+| Scheduled scan workflow | Re-scan the default branch weekly for newly disclosed CVEs |
+| Pre-commit hooks | Run Gitleaks, Semgrep, and file-hygiene checks before a commit is created |
 | Syft | Record the contents of the image as an SPDX SBOM |
 | Trivy | Report HIGH/CRITICAL vulnerabilities in the source and image |
 | Cosign | Sign the image with a short-lived certificate derived from GitHub OIDC |
@@ -57,11 +60,15 @@
 
 ## Data flow
 
+Locally, pre-commit runs Gitleaks and Semgrep before a commit is created.
+
 1. A push or pull request triggers `supply-chain.yml`.
 2. Static analysis and secret scanning run in parallel with the test job.
 3. The `supply-chain` job builds the image. On `main`, it pushes to GHCR, signs with Cosign, moves the `latest` tag, and attests provenance.
 4. Trivy and Syft run against the image. Reports are uploaded as SARIF and artifacts.
 5. On `main`, `kind-verify.yml` can be run manually to create a cluster, install Kyverno, deploy the signed image, and prove that an unsigned image is denied.
+6. `codeql.yml` runs CodeQL on pushes, pull requests, and a weekly schedule.
+7. `scheduled-scan.yml` re-scans the default branch every week so new CVEs are visible even without a code change.
 
 ## Decisions
 

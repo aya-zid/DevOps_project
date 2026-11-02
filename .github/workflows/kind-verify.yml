@@ -42,7 +42,7 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1
         with:
-          cluster_name: irongate
+          cluster_name: devops-pipeline
           config: deploy/kind/kind-config.yaml
 
       - name: Install Kyverno
@@ -58,7 +58,7 @@ jobs:
         env:
           REPO: ${{ steps.image.outputs.repo }}
         run: |
-          kubectl create namespace irongate --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace devops-pipeline --dry-run=client -o yaml | kubectl apply -f -
           sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${REPO}|g" \
             security/kyverno/verify-signed-images.yaml | kubectl apply -f -
           kubectl apply -f security/kyverno/require-hardening.yaml
@@ -68,13 +68,13 @@ jobs:
           IMAGE_REF: ${{ steps.image.outputs.ref }}
         run: |
           sed -e "s|IMAGE_PLACEHOLDER|${IMAGE_REF}|g" \
-            deploy/k8s/deployment.yaml | kubectl apply -n irongate -f -
-          kubectl apply -n irongate -f deploy/k8s/service.yaml
-          kubectl -n irongate rollout status deployment/irongate --timeout=240s
+            deploy/k8s/deployment.yaml | kubectl apply -n devops-pipeline -f -
+          kubectl apply -n devops-pipeline -f deploy/k8s/service.yaml
+          kubectl -n devops-pipeline rollout status deployment/devops-pipeline --timeout=240s
 
       - name: Smoke test
         run: |
-          kubectl -n irongate port-forward svc/irongate 8080:80 >/tmp/port-forward.log 2>&1 &
+          kubectl -n devops-pipeline port-forward svc/devops-pipeline 8080:80 >/tmp/port-forward.log 2>&1 &
           PF_PID=$!
           trap 'kill $PF_PID 2>/dev/null || true' EXIT
           for _ in $(seq 1 30); do
@@ -89,9 +89,9 @@ jobs:
 
       - name: Assert unsigned image is denied
         run: |
-          if kubectl apply -n irongate -f deploy/k8s/unsigned-fixture.yaml; then
+          if kubectl apply -n devops-pipeline -f deploy/k8s/unsigned-fixture.yaml; then
             echo "ERROR: Kyverno admitted an unsigned image"
-            kubectl -n irongate delete pod unsigned-fixture --ignore-not-found
+            kubectl -n devops-pipeline delete pod unsigned-fixture --ignore-not-found
             exit 1
           fi
           echo "OK: Kyverno rejected the unsigned pod"

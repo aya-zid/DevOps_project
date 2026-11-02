@@ -15,7 +15,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 
 try {
   await app.listen({ port, host });
-  console.log(`irongate listening on http://${host}:${port}`);
+  console.log(`devops-pipeline listening on http://${host}:${port}`);
 } catch (error) {
   console.error(error);
   process.exit(1);

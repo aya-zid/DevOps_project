@@ -1,4 +1,4 @@
-# IronGate extends Gitleaks' built-in rules. Only project-specific
+# This project extends Gitleaks' built-in rules. Only project-specific
 # allowlists belong here; do not disable the default rule set.
 [allowlist]
 description = "Documentation examples and test fixtures"

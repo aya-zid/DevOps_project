@@ -77,7 +77,7 @@ jobs:
       - name: Semgrep project rules (gated)
         run: |
           semgrep scan \
-            --config security/semgrep/irongate-rules.yml \
+            --config security/semgrep/devops-pipeline-rules.yml \
             --severity ERROR \
             --error \
             --sarif \

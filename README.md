@@ -1,6 +1,6 @@
-# IronGate
+# DevOps Security Pipeline
 
-**A secure software supply-chain pipeline.** IronGate builds a small container image, scans it, generates an SBOM, signs it with keyless Sigstore, attests its provenance, and uses Kyverno to reject unsigned images at the cluster boundary.
+**A secure software supply-chain pipeline.** The pipeline builds a small container image, scans it, generates an SBOM, signs it with keyless Sigstore, attests its provenance, and uses Kyverno to reject unsigned images at the cluster boundary.
 
 The pipeline is the product. The TypeScript service is a deliberately small deploy target so every stage has something real to build, scan, sign, and admit.
 
@@ -10,7 +10,7 @@ The pipeline is the product. The TypeScript service is a deliberately small depl
 
 ## Why this exists
 
-Most CI examples stop at "build and test." IronGate demonstrates the controls that make a supply chain defensible:
+Most CI examples stop at "build and test." This project demonstrates the controls that make a supply chain defensible:
 
 - **Nothing secret reaches the repo** — Gitleaks scans the full history on every run.
 - **Code is analyzed before it ships** — Semgrep runs the `p/ci` ruleset plus project-specific rules.
@@ -65,7 +65,7 @@ push / pull request
 | Stage | Tool | What it proves |
 |-------|------|----------------|
 | Secret scanning | Gitleaks | No credentials in the working tree or git history |
-| SAST | Semgrep (`p/ci` + [`security/semgrep`](security/semgrep/irongate-rules.yml)) | No blocking code patterns such as `eval`, shell execution, or hardcoded secrets |
+| SAST | Semgrep (`p/ci` + [`security/semgrep`](security/semgrep/devops-pipeline-rules.yml)) | No blocking code patterns such as `eval`, shell execution, or hardcoded secrets |
 | Quality gate | ESLint, `tsc`, Vitest | Lint, types, and 100% line/function coverage of the request handlers (entrypoint excluded) |
 | SBOM | Syft | A reviewable SPDX inventory of the image contents |
 | Vulnerability scan | Trivy | HIGH/CRITICAL findings surfaced as SARIF in GitHub code scanning |
@@ -95,17 +95,29 @@ Routes: `/` (metadata), `/health` (probes), `/metrics` (Prometheus).
 1. Create the repository and push:
 
    ```bash
-   git remote add origin https://github.com/OWNER/irongate.git
+   git remote add origin https://github.com/aya-zid/DevOps_project.git
    git push -u origin main
    ```
 
-2. Enable Actions. The `Supply Chain` workflow runs on every push and pull request.
+2. Enable Actions. The `Supply Chain`, `CodeQL`, and dependency workflows run on every push and pull request.
 3. On `main`, the image is published to GHCR and signed.
 4. For the cluster demo, set the GHCR package visibility to **Public**:
 
-   `Packages → irongate → Package settings → Change visibility → Public`
+   `Packages → devops_project → Package settings → Change visibility → Public`
 
    Kyverno must be able to fetch the signature bundle from the registry.
+
+### Run local security checks
+
+Install the hooks once, then run them before pushing:
+
+```bash
+python -m pip install pre-commit
+pre-commit install
+pre-commit run --all-files
+```
+
+The hooks run Gitleaks, Semgrep (`p/ci` plus the project rules), and basic file hygiene. CodeQL and the scheduled Trivy scan run in GitHub Actions.
 
 ### Run the end-to-end admission demo
 
@@ -114,15 +126,15 @@ Routes: `/` (metadata), `/health` (probes), `/metrics` (Prometheus).
 **Option B — locally:**
 
 ```bash
-export GITHUB_REPOSITORY=OWNER/irongate
+export GITHUB_REPOSITORY=aya-zid/DevOps_project
 ./scripts/preflight.sh
-make demo IMAGE=ghcr.io/owner/irongate:latest
+make demo IMAGE=ghcr.io/aya-zid/devops_project:latest
 ```
 
 Verify the signature independently:
 
 ```bash
-make verify IMAGE=ghcr.io/owner/irongate:latest
+make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
 ```
 
 ---
@@ -137,7 +149,10 @@ make verify IMAGE=ghcr.io/owner/irongate:latest
 | [`.github/workflows/kind-verify.yml`](.github/workflows/kind-verify.yml) | End-to-end Kyverno admission demo |
 | [`.github/workflows/dependency-review.yml`](.github/workflows/dependency-review.yml) | Blocks vulnerable dependency changes in PRs |
 | [`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml) | OpenSSF Scorecard, published to code scanning |
-| [`security/semgrep/`](security/semgrep/irongate-rules.yml) | Project-specific SAST rules |
+| [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) | CodeQL `security-and-quality` analysis |
+| [`.github/workflows/scheduled-scan.yml`](.github/workflows/scheduled-scan.yml) | Weekly Trivy scan for newly disclosed CVEs |
+| [`.pre-commit-config.yaml`](.pre-commit-config.yaml) | Local secret, SAST, and file-hygiene checks |
+| [`security/semgrep/`](security/semgrep/devops-pipeline-rules.yml) | Project-specific SAST rules |
 | [`security/kyverno/`](security/kyverno/) | Signature verification and container hardening policies |
 | [`security/trivy/`](security/trivy/trivy.yaml) | Scanner configuration |
 | [`deploy/kind/`](deploy/kind/kind-config.yaml) | Reproducible local cluster |
@@ -161,6 +176,9 @@ make verify IMAGE=ghcr.io/owner/irongate:latest
 | Provenance | `actions/attest-build-provenance` binds the image digest to the workflow and commit |
 | Admission control | Kyverno verifies signatures and enforces non-root, read-only root filesystem, no privilege escalation, dropped capabilities, and resource limits |
 | Dependency hygiene | Dependabot, Dependency Review, and OpenSSF Scorecard |
+| Continuous code analysis | CodeQL `security-and-quality` for JavaScript/TypeScript |
+| Ongoing CVE monitoring | Scheduled Trivy scan of the default branch every week |
+| Local shift-left checks | Pre-commit runs Gitleaks and Semgrep before a commit leaves the machine |
 | Hardened container | Non-root UID 10001, Alpine runtime, read-only root filesystem, dropped capabilities |
 | Secret scanning | Gitleaks over full history, with project allowlists only for docs and fixtures |
 
@@ -192,7 +210,7 @@ make verify IMAGE=ghcr.io/owner/irongate:latest
 
 ## Development approach
 
-IronGate was built with AI-assisted pair programming. The design, threat model, and verification steps are documented so every control can be explained and reproduced; generated changes were reviewed and tested locally (`npm run lint`, `npm run typecheck`, `npm run test:coverage`) before being committed.
+This project was built with AI-assisted pair programming. The design, threat model, and verification steps are documented so every control can be explained and reproduced; generated changes were reviewed and tested locally (`npm run lint`, `npm run typecheck`, `npm run test:coverage`) before being committed.
 
 ## License
 

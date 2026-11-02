@@ -1,5 +1,5 @@
 rules:
-  - id: irongate.no-eval
+  - id: devops-pipeline.no-eval
     languages: [typescript, javascript]
     message: "Avoid eval(): it enables arbitrary code execution."
     severity: ERROR
@@ -8,7 +8,7 @@ rules:
       owasp: "A03:2021 - Injection"
     pattern: eval(...)
 
-  - id: irongate.no-shell-exec
+  - id: devops-pipeline.no-shell-exec
     languages: [typescript, javascript]
     message: >-
       Avoid shell execution. Prefer execFile or spawn with an argument array
@@ -23,7 +23,7 @@ rules:
           - pattern: exec(...)
           - pattern: execSync(...)
 
-  - id: irongate.no-hardcoded-secret
+  - id: devops-pipeline.no-hardcoded-secret
     languages: [typescript, javascript]
     message: "Possible hardcoded credential in a sensitive-looking variable."
     severity: ERROR

@@ -1,8 +1,8 @@
 {
-  "name": "irongate-app",
+  "name": "devops-pipeline-app",
   "version": "0.1.0",
   "private": true,
-  "description": "Minimal deploy target for the IronGate secure supply-chain pipeline",
+  "description": "Minimal deploy target for the DevOps Security Pipeline",
   "type": "module",
   "engines": {
     "node": ">=20"

@@ -14,7 +14,7 @@ afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
 });
 
-describe("IronGate service", () => {
+describe("DevOps Security Pipeline service", () => {
   it("reports a healthy status", async () => {
     const response = await makeApp().inject({
       method: "GET",
@@ -32,7 +32,7 @@ describe("IronGate service", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      service: "irongate",
+      service: "devops-pipeline",
       version: "dev"
     });
   });
@@ -45,7 +45,7 @@ describe("IronGate service", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers["content-type"]).toContain("text/plain");
-    expect(response.body).toContain("irongate_http_requests_total");
+    expect(response.body).toContain("devops_pipeline_http_requests_total");
     expect(response.body).toContain('route="/health"');
   });
 

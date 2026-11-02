@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 APP_DIR := app
-IMAGE ?= ghcr.io/OWNER/irongate:latest
+IMAGE ?= ghcr.io/aya-zid/devops_project:latest
 
 .PHONY: install lint typecheck test build sbom scan verify kind-up kind-down demo
 
@@ -29,10 +29,10 @@ verify:
 	./scripts/verify-image.sh "$(IMAGE)"
 
 kind-up:
-	kind create cluster --name irongate --config deploy/kind/kind-config.yaml
+	kind create cluster --name devops-pipeline --config deploy/kind/kind-config.yaml
 
 kind-down:
-	kind delete cluster --name irongate
+	kind delete cluster --name devops-pipeline
 
 demo:
 	./scripts/kind-demo.sh "$(IMAGE)"

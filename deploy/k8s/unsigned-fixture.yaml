@@ -1,6 +1,6 @@
 # This Pod is deliberately unsigned but otherwise satisfies the hardening
 # policy. Kyverno must reject it solely because the image has no valid
-# Sigstore signature from the IronGate workflow.
+# Sigstore signature from the DevOps Security Pipeline workflow.
 apiVersion: v1
 kind: Pod
 metadata:

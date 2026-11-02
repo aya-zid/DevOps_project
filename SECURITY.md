@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-IronGate is a demonstration project. The `main` branch is the only supported version.
+This project is a demonstration project. The `main` branch is the only supported version.
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a security problem. Use GitHub's private vulnerability reporting (**Security → Report a vulnerability**) or email the maintainer at `security@example.com`.
+Do not open a public issue for a security problem. Use GitHub's private vulnerability reporting (**Security → Report a vulnerability**).
 
 Include the affected version or commit, a reproduction, and the impact you believe is possible. Expect an acknowledgement within a few days.
 
@@ -32,9 +32,9 @@ Include the affected version or commit, a reproduction, and the impact you belie
 
 | Threat | Impact | Control |
 |--------|--------|---------|
-| Credentials committed to the repo | Account or cluster compromise | Gitleaks over full history; `.gitleaks.toml` only allowlists docs and fixtures |
-| Vulnerable dependency or base image | Exploitation at runtime | Trivy filesystem and image scans; Dependabot; Dependency Review; SBOM |
-| Malicious code pattern | Injection or RCE | Semgrep `p/ci` plus project rules for `eval`, shell execution, and hardcoded secrets |
+| Credentials committed to the repo | Account or cluster compromise | Gitleaks over full history and in pre-commit; `.gitleaks.toml` only allowlists docs and fixtures |
+| Vulnerable dependency or base image | Exploitation at runtime | Trivy filesystem and image scans plus a weekly scheduled scan; Dependabot; Dependency Review; SBOM |
+| Malicious code pattern | Injection or RCE | Semgrep `p/ci` plus project rules for `eval`, shell execution, and hardcoded secrets; CodeQL semantic analysis |
 | Tampered or spoofed image | Running attacker-controlled code | Cosign keyless signing bound to the workflow identity; `cosign verify` with identity and issuer |
 | Unsigned image deployed to the cluster | Policy bypass | Kyverno `verifyImages` with keyless attestor; unsigned Pods are rejected |
 | Over-privileged container | Container escape or host compromise | Non-root, read-only root filesystem, no privilege escalation, all capabilities dropped, seccomp `RuntimeDefault` |

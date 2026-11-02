@@ -38,10 +38,10 @@ PORT=3100 npm run dev
 
 ## Run the pipeline
 
-1. Push the repository to GitHub as `OWNER/irongate`.
-2. The `Supply Chain` workflow runs on every push and pull request.
-3. On `main`, the image is published as `ghcr.io/owner/irongate:<sha>` and `:latest`.
-4. Set the GHCR package to public for the cluster demo: **Packages → irongate → Package settings → Change visibility → Public**.
+1. Push the repository to GitHub as `aya-zid/DevOps_project`.
+2. The `Supply Chain`, `CodeQL`, and dependency workflows run on every push and pull request; `scheduled-scan.yml` re-scans weekly.
+3. On `main`, the image is published as `ghcr.io/aya-zid/devops_project:<sha>` and `:latest`.
+4. Set the GHCR package to public for the cluster demo: **Packages → devops_project → Package settings → Change visibility → Public**.
 
 ### Optional: make Trivy a hard gate
 
@@ -50,14 +50,14 @@ Set the repository variable `TRIVY_EXIT_CODE=1` under **Settings → Secrets and
 ## Verify a signed image
 
 ```bash
-export GITHUB_REPOSITORY=OWNER/irongate
-./scripts/verify-image.sh ghcr.io/owner/irongate:latest
+export GITHUB_REPOSITORY=aya-zid/DevOps_project
+./scripts/verify-image.sh ghcr.io/aya-zid/devops_project:latest
 ```
 
 Or with Make:
 
 ```bash
-make verify IMAGE=ghcr.io/owner/irongate:latest
+make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
 ```
 
 A successful verification prints the Cosign bundle, including the certificate identity and issuer.
@@ -78,14 +78,14 @@ Run **End-to-End Admission Demo** from the Actions tab. It:
 ### Locally
 
 ```bash
-export GITHUB_REPOSITORY=OWNER/irongate
-make demo IMAGE=ghcr.io/owner/irongate:latest
+export GITHUB_REPOSITORY=aya-zid/DevOps_project
+make demo IMAGE=ghcr.io/aya-zid/devops_project:latest
 ```
 
 The signed image should roll out. Then prove enforcement:
 
 ```bash
-kubectl apply -n irongate -f deploy/k8s/unsigned-fixture.yaml
+kubectl apply -n devops-pipeline -f deploy/k8s/unsigned-fixture.yaml
 ```
 
 The fixture is hardened but unsigned, so the only policy it can violate is signature verification. Expected result: the Pod is rejected by Kyverno with a signature verification error.
@@ -93,7 +93,7 @@ The fixture is hardened but unsigned, so the only policy it can violate is signa
 Check the app:
 
 ```bash
-kubectl -n irongate port-forward svc/irongate 8080:80
+kubectl -n devops-pipeline port-forward svc/devops-pipeline 8080:80
 curl http://127.0.0.1:8080/health
 ```
 
@@ -111,7 +111,7 @@ curl http://127.0.0.1:8080/health
 ## Teardown
 
 ```bash
-kind delete cluster --name irongate
+kind delete cluster --name devops-pipeline
 ```
 
 Remove local artifacts (Bash):
@@ -148,9 +148,9 @@ make scan
 
 # Policies
 kubectl get clusterpolicy
-kubectl describe clusterpolicy verify-irongate-signatures
-kubectl -n irongate get events --sort-by=.lastTimestamp
+kubectl describe clusterpolicy verify-devops-pipeline-signatures
+kubectl -n devops-pipeline get events --sort-by=.lastTimestamp
 
 # Signatures
-cosign tree ghcr.io/owner/irongate:latest
+cosign tree ghcr.io/aya-zid/devops_project:latest
 ```

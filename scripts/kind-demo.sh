@@ -3,7 +3,7 @@ set -euo pipefail
 
 IMAGE="${1:?usage: kind-demo.sh <signed-image>}"
 REPO="${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY=owner/repo}"
-CLUSTER="irongate"
+CLUSTER="devops-pipeline"
 
 for tool in docker kind kubectl helm; do
   command -v "$tool" >/dev/null 2>&1 || {
@@ -23,19 +23,19 @@ helm upgrade --install kyverno kyverno/kyverno \
   --set admissionController.replicas=1 \
   --wait --timeout 10m
 
-kubectl create namespace irongate --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace devops-pipeline --dry-run=client -o yaml | kubectl apply -f -
 sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${REPO}|g" \
   security/kyverno/verify-signed-images.yaml | kubectl apply -f -
 kubectl apply -f security/kyverno/require-hardening.yaml
 
 sed -e "s|IMAGE_PLACEHOLDER|${IMAGE}|g" \
-  deploy/k8s/deployment.yaml | kubectl apply -n irongate -f -
-kubectl apply -n irongate -f deploy/k8s/service.yaml
+  deploy/k8s/deployment.yaml | kubectl apply -n devops-pipeline -f -
+kubectl apply -n devops-pipeline -f deploy/k8s/service.yaml
 
-kubectl -n irongate rollout status deployment/irongate --timeout=240s
+kubectl -n devops-pipeline rollout status deployment/devops-pipeline --timeout=240s
 
 echo
 echo "Signed image admitted."
 echo "Try an unsigned image (it should be rejected):"
-echo "  kubectl apply -n irongate -f deploy/k8s/unsigned-fixture.yaml"
+echo "  kubectl apply -n devops-pipeline -f deploy/k8s/unsigned-fixture.yaml"
 echo "App: http://localhost:30080"

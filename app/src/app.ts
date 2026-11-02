@@ -15,9 +15,9 @@ export function buildApp(): FastifyInstance {
   });
 
   app.get("/", async () => ({
-    service: "irongate",
+    service: "devops-pipeline",
     description:
-      "Minimal deploy target for the IronGate secure supply-chain pipeline",
+      "Minimal deploy target for the DevOps Security Pipeline",
     version: process.env.APP_VERSION ?? "dev"
   }));
 

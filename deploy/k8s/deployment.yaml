@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: irongate
+  name: devops-pipeline
   labels:
-    app.kubernetes.io/name: irongate
-    app.kubernetes.io/part-of: irongate
+    app.kubernetes.io/name: devops-pipeline
+    app.kubernetes.io/part-of: devops-pipeline
 spec:
   replicas: 2
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app.kubernetes.io/name: irongate
+      app.kubernetes.io/name: devops-pipeline
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: irongate
-        app.kubernetes.io/part-of: irongate
+        app.kubernetes.io/name: devops-pipeline
+        app.kubernetes.io/part-of: devops-pipeline
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -26,7 +26,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: irongate
+        - name: devops-pipeline
           image: IMAGE_PLACEHOLDER
           imagePullPolicy: IfNotPresent
           ports:

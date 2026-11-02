@@ -1,7 +1,7 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
-  name: require-irongate-hardening
+  name: require-devops-pipeline-hardening
   annotations:
     policies.kyverno.io/title: Require container hardening
     policies.kyverno.io/category: Pod Security
@@ -9,7 +9,7 @@ metadata:
     policies.kyverno.io/description: >-
       Enforce non-root execution, a read-only root filesystem, no privilege
       escalation, dropped capabilities, explicit tags, and resource limits for
-      Pods in the irongate namespace.
+      Pods in the devops-pipeline namespace.
 spec:
   validationFailureAction: Enforce
   background: true
@@ -21,7 +21,7 @@ spec:
               kinds:
                 - Pod
               namespaces:
-                - irongate
+                - devops-pipeline
       validate:
         message: "Pods must set runAsNonRoot: true."
         pattern:
@@ -36,7 +36,7 @@ spec:
               kinds:
                 - Pod
               namespaces:
-                - irongate
+                - devops-pipeline
       validate:
         message: >-
           Every container must disable privilege escalation, use a read-only
@@ -58,7 +58,7 @@ spec:
               kinds:
                 - Pod
               namespaces:
-                - irongate
+                - devops-pipeline
       validate:
         message: "Every container must define CPU and memory requests and limits."
         foreach:
@@ -79,7 +79,7 @@ spec:
               kinds:
                 - Pod
               namespaces:
-                - irongate
+                - devops-pipeline
       validate:
         message: "Images must include an explicit tag or digest."
         foreach:
@@ -94,7 +94,7 @@ spec:
               kinds:
                 - Pod
               namespaces:
-                - irongate
+                - devops-pipeline
       validate:
         message: "Images must be pinned to a digest or an explicit non-latest tag."
         foreach:
