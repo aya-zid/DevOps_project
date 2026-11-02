@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-irongate-signatures
+  annotations:
+    policies.kyverno.io/title: Verify IronGate image signatures
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Only admit Pods in the irongate namespace whose images carry a keyless
+      Sigstore signature produced by the IronGate GitHub Actions workflow.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: verify-keyless-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - irongate
+      verifyImages:
+        - imageReferences:
+            - "*"
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/GITHUB_REPOSITORY_PLACEHOLDER/.github/workflows/*"
+                    issuer: "https://token.actions.githubusercontent.com"

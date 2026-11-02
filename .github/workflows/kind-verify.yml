@@ -1,0 +1,93 @@
+name: End-to-End Admission Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Signed image reference (defaults to ghcr.io/<repo>:latest)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  kind-verify:
+    name: Signed image admitted, unsigned image denied
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Resolve image
+        id: image
+        env:
+          INPUT_IMAGE: ${{ inputs.image }}
+        run: |
+          IMAGE="$INPUT_IMAGE"
+          if [ -z "$IMAGE" ]; then
+            IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:latest"
+          fi
+          echo "ref=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "repo=${GITHUB_REPOSITORY}" >> "$GITHUB_OUTPUT"
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: irongate
+          config: deploy/kind/kind-config.yaml
+
+      - name: Install Kyverno
+        run: |
+          helm repo add kyverno https://kyverno.github.io/kyverno/
+          helm repo update
+          helm upgrade --install kyverno kyverno/kyverno \
+            --namespace kyverno --create-namespace \
+            --set admissionController.replicas=1 \
+            --wait --timeout 10m
+
+      - name: Apply admission policies
+        run: |
+          kubectl create namespace irongate --dry-run=client -o yaml | kubectl apply -f -
+          sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${{ steps.image.outputs.repo }}|g" \
+            security/kyverno/verify-signed-images.yaml | kubectl apply -f -
+          kubectl apply -f security/kyverno/require-hardening.yaml
+
+      - name: Deploy signed image
+        run: |
+          sed -e "s|IMAGE_PLACEHOLDER|${{ steps.image.outputs.ref }}|g" \
+            deploy/k8s/deployment.yaml | kubectl apply -n irongate -f -
+          kubectl apply -n irongate -f deploy/k8s/service.yaml
+          kubectl -n irongate rollout status deployment/irongate --timeout=240s
+
+      - name: Smoke test
+        run: |
+          kubectl -n irongate port-forward svc/irongate 8080:80 >/tmp/port-forward.log 2>&1 &
+          PF_PID=$!
+          trap 'kill $PF_PID 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/health; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/port-forward.log
+          exit 1
+
+      - name: Assert unsigned image is denied
+        run: |
+          if kubectl apply -n irongate -f deploy/k8s/unsigned-fixture.yaml; then
+            echo "ERROR: Kyverno admitted an unsigned image"
+            kubectl -n irongate delete pod unsigned-fixture --ignore-not-found
+            exit 1
+          fi
+          echo "OK: Kyverno rejected the unsigned pod"
