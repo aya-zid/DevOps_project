@@ -1,0 +1,267 @@
+name: Supply Chain
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-chain-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  static-analysis:
+    name: SAST and secret scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Semgrep
+        run: |
+          python -m pip install --upgrade pip
+          pip install semgrep
+
+      - name: Semgrep registry rules (report-only)
+        run: |
+          semgrep scan \
+            --config p/ci \
+            --sarif \
+            --output semgrep.sarif \
+            --exclude app/node_modules \
+            --exclude app/dist \
+            --exclude app/coverage
+
+      - name: Semgrep project rules (gated)
+        run: |
+          semgrep scan \
+            --config security/semgrep/irongate-rules.yml \
+            --severity ERROR \
+            --error \
+            --sarif \
+            --output semgrep-project.sarif \
+            --exclude app/test
+
+      - name: Upload Semgrep SARIF
+        if: always() && hashFiles('semgrep*.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .
+          category: semgrep
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  test:
+    name: Build, lint, and test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Lint
+        working-directory: app
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: app
+        run: npm run typecheck
+
+      - name: Test with coverage
+        working-directory: app
+        run: npm run test:coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: app/coverage
+          retention-days: 7
+
+  supply-chain:
+    name: Build, SBOM, scan, sign, attest
+    needs: [static-analysis, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      security-events: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compute image name
+        id: meta
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "name=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}:${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          echo "latest=${IMAGE}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.image }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate SBOM from image
+        if: github.event_name != 'pull_request'
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.image }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          artifact-name: sbom.spdx.json
+
+      - name: Generate SBOM from source
+        if: github.event_name == 'pull_request'
+        uses: anchore/sbom-action@v0
+        with:
+          path: app
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          artifact-name: sbom.spdx.json
+
+      - name: Scan filesystem with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          skip-dirs: app/node_modules,app/dist,app/coverage
+          exit-code: ${{ vars.TRIVY_EXIT_CODE || '0' }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: ${{ vars.TRIVY_EXIT_CODE || '0' }}
+
+      - name: Upload Trivy filesystem SARIF
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Upload Trivy image SARIF
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Install Cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image with keyless Sigstore
+        if: github.event_name != 'pull_request'
+        run: cosign sign --yes "${{ steps.meta.outputs.image }}"
+
+      - name: Verify signature
+        if: github.event_name != 'pull_request'
+        run: |
+          cosign verify "${{ steps.meta.outputs.image }}" \
+            --certificate-identity-regexp "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+      - name: Move latest tag
+        if: github.event_name != 'pull_request'
+        run: |
+          docker buildx imagetools create \
+            -t "${{ steps.meta.outputs.latest }}" \
+            "${{ steps.meta.outputs.image }}"
+
+      - name: Attest build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ steps.meta.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

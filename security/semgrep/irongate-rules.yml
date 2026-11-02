@@ -1,0 +1,44 @@
+rules:
+  - id: irongate.no-eval
+    languages: [typescript, javascript]
+    message: "Avoid eval(): it enables arbitrary code execution."
+    severity: ERROR
+    metadata:
+      category: security
+      owasp: "A03:2021 - Injection"
+    pattern: eval(...)
+
+  - id: irongate.no-shell-exec
+    languages: [typescript, javascript]
+    message: >-
+      Avoid shell execution. Prefer execFile or spawn with an argument array
+      so user-controlled input cannot be interpreted by a shell.
+    severity: ERROR
+    metadata:
+      category: security
+      owasp: "A03:2021 - Injection"
+    patterns:
+      - pattern-either:
+          - pattern: child_process.exec(...)
+          - pattern: exec(...)
+          - pattern: execSync(...)
+
+  - id: irongate.no-hardcoded-secret
+    languages: [typescript, javascript]
+    message: "Possible hardcoded credential in a sensitive-looking variable."
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+    patterns:
+      - pattern: $KEY = "$VALUE"
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)(password|passwd|secret|token|api[_-]?key|private[_-]?key)
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: .{8,}
+    paths:
+      exclude:
+        - "app/test/**"
+        - "docs/**"

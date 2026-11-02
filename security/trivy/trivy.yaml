@@ -1,0 +1,10 @@
+severity:
+  - HIGH
+  - CRITICAL
+ignore-unfixed: true
+exit-code: 0
+scan:
+  skip-dirs:
+    - app/node_modules
+    - app/dist
+    - app/coverage
