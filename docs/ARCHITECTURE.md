@@ -40,6 +40,7 @@
 | Component | Responsibility |
 |-----------|----------------|
 | Fastify service | Serve `/`, `/health`, `/metrics`; expose a minimal, hardened deploy target |
+| ServiceAccount and PDB | Run the workload without an automounted API token and keep one replica available during voluntary disruption |
 | Supply Chain workflow | Produce a tested, scanned, signed, and attested image |
 | CodeQL workflow | Run semantic `security-and-quality` analysis for JavaScript/TypeScript |
 | Scheduled scan workflow | Re-scan the default branch weekly for newly disclosed CVEs |

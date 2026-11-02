@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: devops-pipeline
+  labels:
+    app.kubernetes.io/name: devops-pipeline
+    app.kubernetes.io/part-of: devops-pipeline
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-pipeline

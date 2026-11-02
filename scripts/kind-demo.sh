@@ -23,14 +23,17 @@ helm upgrade --install kyverno kyverno/kyverno \
   --set admissionController.replicas=1 \
   --wait --timeout 10m
 
-kubectl create namespace devops-pipeline --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -f deploy/k8s/namespace.yaml
 sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${REPO}|g" \
   security/kyverno/verify-signed-images.yaml | kubectl apply -f -
 kubectl apply -f security/kyverno/require-hardening.yaml
 
+kubectl apply -n devops-pipeline -f deploy/k8s/serviceaccount.yaml
+
 sed -e "s|IMAGE_PLACEHOLDER|${IMAGE}|g" \
   deploy/k8s/deployment.yaml | kubectl apply -n devops-pipeline -f -
 kubectl apply -n devops-pipeline -f deploy/k8s/service.yaml
+kubectl apply -n devops-pipeline -f deploy/k8s/poddisruptionbudget.yaml
 
 kubectl -n devops-pipeline rollout status deployment/devops-pipeline --timeout=240s
 

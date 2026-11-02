@@ -2,10 +2,28 @@ SHELL := /usr/bin/env bash
 APP_DIR := app
 IMAGE ?= ghcr.io/aya-zid/devops_project:latest
 
-.PHONY: install lint typecheck test build sbom scan verify kind-up kind-down demo
+.PHONY: help install precommit lint typecheck test build sbom scan verify kind-up kind-down demo
+
+help:
+	@printf '%s\n' \
+		'install    Install application dependencies' \
+		'precommit  Run the pre-commit hooks' \
+		'lint       Run ESLint' \
+		'typecheck  Run TypeScript checks' \
+		'test       Run tests with coverage' \
+		'build      Compile the application' \
+		'sbom       Generate an SPDX SBOM with Syft' \
+		'scan       Scan the repository with Trivy' \
+		'verify     Verify an image signature' \
+		'kind-up    Create the local kind cluster' \
+		'kind-down  Delete the local kind cluster' \
+		'demo       Run the Kyverno admission demo'
 
 install:
 	cd $(APP_DIR) && npm ci
+
+precommit:
+	pre-commit run --all-files
 
 lint:
 	cd $(APP_DIR) && npm run lint

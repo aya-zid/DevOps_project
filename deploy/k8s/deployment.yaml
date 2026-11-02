@@ -17,6 +17,7 @@ spec:
         app.kubernetes.io/name: devops-pipeline
         app.kubernetes.io/part-of: devops-pipeline
     spec:
+      serviceAccountName: devops-pipeline
       automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true

@@ -71,7 +71,7 @@ Run **End-to-End Admission Demo** from the Actions tab. It:
 1. Creates a kind cluster.
 2. Installs Kyverno.
 3. Applies the signature and hardening policies.
-4. Deploys the signed image and waits for rollout.
+4. Applies the ServiceAccount, Deployment, Service, and PodDisruptionBudget, then waits for rollout.
 5. Smoke-tests `/health` through a port-forward.
 6. Attempts to run `nginx:latest` and fails the job if Kyverno admits it.
 

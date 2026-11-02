@@ -1,5 +1,10 @@
 # DevOps Security Pipeline
 
+[![Supply Chain](https://github.com/aya-zid/DevOps_project/actions/workflows/supply-chain.yml/badge.svg)](https://github.com/aya-zid/DevOps_project/actions/workflows/supply-chain.yml)
+[![CodeQL](https://github.com/aya-zid/DevOps_project/actions/workflows/codeql.yml/badge.svg)](https://github.com/aya-zid/DevOps_project/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/aya-zid/DevOps_project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/aya-zid/DevOps_project)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **A secure software supply-chain pipeline.** The pipeline builds a small container image, scans it, generates an SBOM, signs it with keyless Sigstore, attests its provenance, and uses Kyverno to reject unsigned images at the cluster boundary.
 
 The pipeline is the product. The TypeScript service is a deliberately small deploy target so every stage has something real to build, scan, sign, and admit.
@@ -119,6 +124,8 @@ pre-commit run --all-files
 
 The hooks run Gitleaks, Semgrep (`p/ci` plus the project rules), and basic file hygiene. CodeQL and the scheduled Trivy scan run in GitHub Actions.
 
+Run `make help` to list the local targets.
+
 ### Run the end-to-end admission demo
 
 **Option A — GitHub Actions:** run the **End-to-End Admission Demo** workflow manually. It creates a kind cluster, installs Kyverno, deploys the signed image, smoke-tests `/health`, and asserts that an unsigned `nginx:latest` Pod is rejected.
@@ -156,10 +163,16 @@ make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
 | [`security/kyverno/`](security/kyverno/) | Signature verification and container hardening policies |
 | [`security/trivy/`](security/trivy/trivy.yaml) | Scanner configuration |
 | [`deploy/kind/`](deploy/kind/kind-config.yaml) | Reproducible local cluster |
-| [`deploy/k8s/`](deploy/k8s/) | Deployment, Service, Kustomize entrypoint |
+| [`deploy/k8s/`](deploy/k8s/) | Namespace, Deployment, Service, ServiceAccount, PodDisruptionBudget, and Kustomize entrypoint |
 | [`scripts/`](scripts/) | Preflight, signature verification, kind demo |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Components, trust boundaries, and decisions |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Operate, verify, troubleshoot, tear down |
+| [`docs/TESTING.md`](docs/TESTING.md) | Test strategy, coverage, and CI expectations |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Local setup, testing, and contribution workflow |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release history |
+| [`.github/CODEOWNERS`](.github/CODEOWNERS) | Default code owner |
+| [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/) | Bug and feature request forms |
+| [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) | Pull request checklist |
 | [`SECURITY.md`](SECURITY.md) | Threat model, controls, and reporting |
 
 ---
@@ -180,6 +193,8 @@ make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
 | Ongoing CVE monitoring | Scheduled Trivy scan of the default branch every week |
 | Local shift-left checks | Pre-commit runs Gitleaks and Semgrep before a commit leaves the machine |
 | Hardened container | Non-root UID 10001, Alpine runtime, read-only root filesystem, dropped capabilities |
+| Workload identity | Dedicated ServiceAccount; the service account token is not automounted |
+| Availability | PodDisruptionBudget keeps at least one replica available during voluntary disruptions |
 | Secret scanning | Gitleaks over full history, with project allowlists only for docs and fixtures |
 
 **Trivy is report-only by default.** Set the repository variable `TRIVY_EXIT_CODE=1` to turn HIGH/CRITICAL findings into a hard gate. This is deliberate: upstream base-image CVEs should not silently block unrelated changes, but the switch is documented and one click away. See [`security/trivy/trivy.yaml`](security/trivy/trivy.yaml).
