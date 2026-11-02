@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.sarif
+sbom.*.json
+cosign.key
+cosign.pub
+.env
+.env.*
+.DS_Store
+Thumbs.db
