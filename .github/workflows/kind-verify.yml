@@ -55,15 +55,19 @@ jobs:
             --wait --timeout 10m
 
       - name: Apply admission policies
+        env:
+          REPO: ${{ steps.image.outputs.repo }}
         run: |
           kubectl create namespace irongate --dry-run=client -o yaml | kubectl apply -f -
-          sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${{ steps.image.outputs.repo }}|g" \
+          sed -e "s|GITHUB_REPOSITORY_PLACEHOLDER|${REPO}|g" \
             security/kyverno/verify-signed-images.yaml | kubectl apply -f -
           kubectl apply -f security/kyverno/require-hardening.yaml
 
       - name: Deploy signed image
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.ref }}
         run: |
-          sed -e "s|IMAGE_PLACEHOLDER|${{ steps.image.outputs.ref }}|g" \
+          sed -e "s|IMAGE_PLACEHOLDER|${IMAGE_REF}|g" \
             deploy/k8s/deployment.yaml | kubectl apply -n irongate -f -
           kubectl apply -n irongate -f deploy/k8s/service.yaml
           kubectl -n irongate rollout status deployment/irongate --timeout=240s

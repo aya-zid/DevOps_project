@@ -17,13 +17,36 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  static-analysis:
-    name: SAST and secret scanning
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  sast:
+    name: Static analysis
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
-      pull-requests: write
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@v2
@@ -61,19 +84,21 @@ jobs:
             --output semgrep-project.sarif \
             --exclude app/test
 
-      - name: Upload Semgrep SARIF
-        if: always() && hashFiles('semgrep*.sarif') != ''
+      - name: Upload Semgrep registry SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
         continue-on-error: true
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: .
-          category: semgrep
+          sarif_file: semgrep.sarif
+          category: semgrep-registry
 
-      - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: .gitleaks.toml
+      - name: Upload Semgrep project SARIF
+        if: always() && hashFiles('semgrep-project.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-project.sarif
+          category: semgrep-project
 
   test:
     name: Build, lint, and test
@@ -121,10 +146,11 @@ jobs:
           name: coverage
           path: app/coverage
           retention-days: 7
+          if-no-files-found: ignore
 
   supply-chain:
     name: Build, SBOM, scan, sign, attest
-    needs: [static-analysis, test]
+    needs: [secret-scan, sast, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
