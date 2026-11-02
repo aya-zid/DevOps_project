@@ -225,7 +225,7 @@ make verify IMAGE=ghcr.io/aya-zid/devops-security-pipeline:latest
 
 ## Development approach
 
-This project was built with AI-assisted pair programming. The design, threat model, and verification steps are documented so every control can be explained and reproduced; generated changes were reviewed and tested locally (`npm run lint`, `npm run typecheck`, `npm run test:coverage`) before being committed.
+The design, threat model, and verification steps are documented so every control can be explained and reproduced; generated changes were reviewed and tested locally (`npm run lint`, `npm run typecheck`, `npm run test:coverage`) before being committed.
 
 ## License
 
