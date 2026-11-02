@@ -114,10 +114,17 @@ curl http://127.0.0.1:8080/health
 kind delete cluster --name irongate
 ```
 
-Remove local artifacts:
+Remove local artifacts (Bash):
 
 ```bash
 rm -rf app/node_modules app/dist app/coverage sbom.spdx.json *.sarif
+```
+
+On Windows PowerShell:
+
+```powershell
+Remove-Item -Recurse -Force app/node_modules, app/dist, app/coverage
+Remove-Item -Force sbom.spdx.json, *.sarif
 ```
 
 ## Interview talking points

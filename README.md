@@ -88,9 +88,17 @@ npm run dev          # http://localhost:3000
 
 Routes: `/` (metadata), `/health` (probes), `/metrics` (Prometheus).
 
+> **Windows:** the service and tests run natively. The pipeline scripts are Bash, so run them from WSL2 or Git Bash. The full kind/Kyverno demo also needs Docker Desktop with WSL2 integration; if you do not have that, use the GitHub Actions workflow instead.
+
 ### Run the pipeline
 
-1. Push the repository to GitHub as `OWNER/irongate`.
+1. Create the repository and push:
+
+   ```bash
+   git remote add origin https://github.com/OWNER/irongate.git
+   git push -u origin main
+   ```
+
 2. Enable Actions. The `Supply Chain` workflow runs on every push and pull request.
 3. On `main`, the image is published to GHCR and signed.
 4. For the cluster demo, set the GHCR package visibility to **Public**:
