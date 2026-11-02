@@ -9,5 +9,5 @@ resources:
   - poddisruptionbudget.yaml
 images:
   - name: IMAGE_PLACEHOLDER
-    newName: ghcr.io/aya-zid/devops_project
+    newName: ghcr.io/aya-zid/devops-security-pipeline
     newTag: latest

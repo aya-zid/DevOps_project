@@ -38,10 +38,10 @@ PORT=3100 npm run dev
 
 ## Run the pipeline
 
-1. Push the repository to GitHub as `aya-zid/DevOps_project`.
+1. Push the repository to GitHub as `aya-zid/devops-security-pipeline`.
 2. The `Supply Chain`, `CodeQL`, and dependency workflows run on every push and pull request; `scheduled-scan.yml` re-scans weekly.
-3. On `main`, the image is published as `ghcr.io/aya-zid/devops_project:<sha>` and `:latest`.
-4. Set the GHCR package to public for the cluster demo: **Packages → devops_project → Package settings → Change visibility → Public**.
+3. On `main`, the image is published as `ghcr.io/aya-zid/devops-security-pipeline:<sha>` and `:latest`.
+4. Set the GHCR package to public for the cluster demo: **Packages → devops-security-pipeline → Package settings → Change visibility → Public**.
 
 ### Optional: make Trivy a hard gate
 
@@ -50,14 +50,14 @@ Set the repository variable `TRIVY_EXIT_CODE=1` under **Settings → Secrets and
 ## Verify a signed image
 
 ```bash
-export GITHUB_REPOSITORY=aya-zid/DevOps_project
-./scripts/verify-image.sh ghcr.io/aya-zid/devops_project:latest
+export GITHUB_REPOSITORY=aya-zid/devops-security-pipeline
+./scripts/verify-image.sh ghcr.io/aya-zid/devops-security-pipeline:latest
 ```
 
 Or with Make:
 
 ```bash
-make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
+make verify IMAGE=ghcr.io/aya-zid/devops-security-pipeline:latest
 ```
 
 A successful verification prints the Cosign bundle, including the certificate identity and issuer.
@@ -78,8 +78,8 @@ Run **End-to-End Admission Demo** from the Actions tab. It:
 ### Locally
 
 ```bash
-export GITHUB_REPOSITORY=aya-zid/DevOps_project
-make demo IMAGE=ghcr.io/aya-zid/devops_project:latest
+export GITHUB_REPOSITORY=aya-zid/devops-security-pipeline
+make demo IMAGE=ghcr.io/aya-zid/devops-security-pipeline:latest
 ```
 
 The signed image should roll out. Then prove enforcement:
@@ -152,5 +152,5 @@ kubectl describe clusterpolicy verify-devops-pipeline-signatures
 kubectl -n devops-pipeline get events --sort-by=.lastTimestamp
 
 # Signatures
-cosign tree ghcr.io/aya-zid/devops_project:latest
+cosign tree ghcr.io/aya-zid/devops-security-pipeline:latest
 ```

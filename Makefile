@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 APP_DIR := app
-IMAGE ?= ghcr.io/aya-zid/devops_project:latest
+IMAGE ?= ghcr.io/aya-zid/devops-security-pipeline:latest
 
 .PHONY: help install precommit lint typecheck test build sbom scan verify kind-up kind-down demo
 

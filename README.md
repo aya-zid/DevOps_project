@@ -1,8 +1,8 @@
 # DevOps Security Pipeline
 
-[![Supply Chain](https://github.com/aya-zid/DevOps_project/actions/workflows/supply-chain.yml/badge.svg)](https://github.com/aya-zid/DevOps_project/actions/workflows/supply-chain.yml)
-[![CodeQL](https://github.com/aya-zid/DevOps_project/actions/workflows/codeql.yml/badge.svg)](https://github.com/aya-zid/DevOps_project/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/aya-zid/DevOps_project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/aya-zid/DevOps_project)
+[![Supply Chain](https://github.com/aya-zid/devops-security-pipeline/actions/workflows/supply-chain.yml/badge.svg)](https://github.com/aya-zid/devops-security-pipeline/actions/workflows/supply-chain.yml)
+[![CodeQL](https://github.com/aya-zid/devops-security-pipeline/actions/workflows/codeql.yml/badge.svg)](https://github.com/aya-zid/devops-security-pipeline/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/aya-zid/devops-security-pipeline/badge)](https://securityscorecards.dev/viewer/?uri=github.com/aya-zid/devops-security-pipeline)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **A secure software supply-chain pipeline.** The pipeline builds a small container image, scans it, generates an SBOM, signs it with keyless Sigstore, attests its provenance, and uses Kyverno to reject unsigned images at the cluster boundary.
@@ -100,7 +100,7 @@ Routes: `/` (metadata), `/health` (probes), `/metrics` (Prometheus).
 1. Create the repository and push:
 
    ```bash
-   git remote add origin https://github.com/aya-zid/DevOps_project.git
+   git remote add origin https://github.com/aya-zid/devops-security-pipeline.git
    git push -u origin main
    ```
 
@@ -108,7 +108,7 @@ Routes: `/` (metadata), `/health` (probes), `/metrics` (Prometheus).
 3. On `main`, the image is published to GHCR and signed.
 4. For the cluster demo, set the GHCR package visibility to **Public**:
 
-   `Packages → devops_project → Package settings → Change visibility → Public`
+   `Packages → devops-security-pipeline → Package settings → Change visibility → Public`
 
    Kyverno must be able to fetch the signature bundle from the registry.
 
@@ -133,15 +133,15 @@ Run `make help` to list the local targets.
 **Option B — locally:**
 
 ```bash
-export GITHUB_REPOSITORY=aya-zid/DevOps_project
+export GITHUB_REPOSITORY=aya-zid/devops-security-pipeline
 ./scripts/preflight.sh
-make demo IMAGE=ghcr.io/aya-zid/devops_project:latest
+make demo IMAGE=ghcr.io/aya-zid/devops-security-pipeline:latest
 ```
 
 Verify the signature independently:
 
 ```bash
-make verify IMAGE=ghcr.io/aya-zid/devops_project:latest
+make verify IMAGE=ghcr.io/aya-zid/devops-security-pipeline:latest
 ```
 
 ---
